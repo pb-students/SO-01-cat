@@ -3,7 +3,7 @@ CFLAGS = -g -Wall
 
 TARGET = cat
 
-all: $(TARGET)
+all: $(TARGET) test
 
 $(TARGET): main.o read.o
 	$(CC) $(CFLAGS) -o $(TARGET) main.o read.o
@@ -16,3 +16,6 @@ read.o: read.c read.h
 
 clean:
 	rm -f $(TARGET) *.o
+
+test:
+	./test.sh
