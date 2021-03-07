@@ -7,24 +7,29 @@
 #include <stdio.h>
 #include <pwd.h>
 #include <unistd.h>
-#include <string.h>
 #include <stdlib.h>
 #include "read.h"
 
 int readFile(char *filename) {
-    struct passwd *pw = getpwuid(getuid());
-    const char* homeDir = pw->pw_dir;
+    char* absolutePath = realpath(filename, NULL);
 
-    // Expand home directory
-    if (filename[0] == '~' && filename[1] == '/') {
-        unsigned long len = strlen(filename) + strlen(homeDir);
+    if (absolutePath == NULL) {
+        fprintf(stderr, "Cannot get absolute path for file %s: ", filename);
 
-        char* absolutePath = malloc(len * sizeof(char));
-        strcpy(absolutePath, homeDir);
-        strncat(absolutePath, filename + 1, strlen(filename) - 1);
-        absolutePath[len - 1] = '\0';
-        filename = absolutePath;
+        switch (errno) {
+            case EACCES: fprintf(stderr, "Path is not readable.\n"); break;
+            case EIO: fprintf(stderr, "An I/O error occurred.\n"); break;
+            case ELOOP: fprintf(stderr, "Too many symbolic links were encountered in the path.\n"); break;
+            case ENAMETOOLONG: fprintf(stderr, "Path is too long.\n"); break;
+            case ENOENT: fprintf(stderr, "Path does not exists.\n"); break;
+            case ENOMEM: fprintf(stderr, "Out of memory.\n"); break;
+            case ENOTDIR: fprintf(stderr, "One of the path's component is not a directory.\n"); break;
+        }
+
+        return errno;
     }
+
+    filename = absolutePath;
 
     int fd = open(filename, O_RDONLY);
 
